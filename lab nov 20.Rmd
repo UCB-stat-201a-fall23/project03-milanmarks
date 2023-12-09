@@ -1,0 +1,196 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+library(latex2exp)
+```
+
+
+
+# Q1
+
+## a
+
+$$
+\begin{aligned}
+P=\begin{pmatrix}
+0.2&0.7&0.1\\
+0.2&0.5&0.3\\
+0.2&0.4&0.4\\
+\end{pmatrix}
+\end{aligned}
+$$
+
+
+## b
+
+```{r}
+P <- matrix(c(0.2, 0.7, 0.1, 0.2, 0.5, 0.3, 0.2, 0.4, 0.4), nrow = 3, byrow = T)
+P
+```
+
+```{r}
+set.seed(42)
+
+n <- 10
+rec <- numeric(length = n)
+rec[1] <- 1
+for (i in 2:n){
+  rec[i] <- sample(c(1,2,3), size = 1, prob = P[rec[i-1],])
+}
+```
+
+We get one simulation, starting from state 1, showing below:
+
+```{r}
+rec
+```
+
+\newpage
+
+# Q2
+
+## a
+
+$$
+\begin{aligned}
+& \left(\pi_1, \pi_2, \pi_3\right)\left(\begin{array}{lll}
+0.2 & 0.7 & 0.1 \\
+0.2 & 0.5 & 0.3 \\
+0.2 & 0.4 & 0.4
+\end{array}\right)=\left(\pi_1, \pi_2, \pi_3\right) \\
+& \Rightarrow\left\{\begin{array}{l}
+-0.8 \pi_1+0.2 \pi_2+0.2 \pi_3=0 \\
+0.7 \pi_1-0.5 \pi_2+0.4 \pi_3=0 \\
+0.1 \pi_1+0.3 \pi_2-0.6 \pi_3=0
+\end{array}\right. \\
+& \Rightarrow\left\{\begin{array}{l}
+\pi_2=\frac{23}{9} \pi_1 \\
+\pi_3=\frac{13}{9} \pi_1
+\end{array}\right.
+\end{aligned}
+$$
+
+Given $\pi_1+\pi_2+\pi_3=1$. We have
+$$
+\pi_1=\frac{1}{5} \quad \pi_2=\frac{23}{45} \quad \pi_3=\frac{13}{45}
+$$
+
+## b
+
+```{r}
+set.seed(42)
+k <- 2 # number of simulation
+m <- 10 # number of running process in each simulation
+dist <- matrix(nrow = k, ncol = m)
+pi.inf <- c(1/5, 23/45, 13/45)
+pi0.rec <- matrix(nrow = k, ncol = 3)
+
+for (rep in 1:k){
+  # generate three exponential random number and normalize to get pi_0
+  pi0 <- rexp(3)
+  pi0 <- pi0 / sum(pi0)
+  pi0.rec[rep,] <- pi0
+  
+  pi.rec <- matrix(nrow = m, ncol = 3)
+  pi.rec[1,] <- pi0
+  
+  for (i in 2:m){
+    pi.rec[i,] <- pi.rec[i-1,] %*% P
+  }
+  for (i in 1:m){
+    dist[rep,i] <- log(sum((pi.rec[i,] - pi.inf)^2))
+  }
+}
+
+```
+
+
+```{r}
+pi0.rec
+```
+
+Given two different initial probability: $(0.17, 0.58, 0.25)$ and
+$(0.02, 0.24, 0.74)$, the $\log \left\|\pi_i-\pi_{\infty}\right\|_2^2$ shows 
+in the following graphs:
+
+
+```{r}
+par(mfrow=c(1,2))
+plot(dist[1,], xlab = "", ylab = TeX(r"($2\log\| \pi_0 - \pi_\inf \|$)"), 
+     main = TeX(r"($\pi_0^{(1)}$)"))
+plot(dist[2,], xlab = "", ylab = "", main =  TeX(r"($\pi_0^{(2)}$)"))
+```
+
+\newpage
+
+# Q3
+
+## a
+
+```{r}
+set.seed(42)
+m <- 2
+x.0 <- c(1, 2)
+n <- 10000
+rec <- matrix(nrow=m, ncol=n)
+
+for (k in 1:m){
+  for (i in 1:n){
+    x0 <- x.0[k]
+    x.prev <- x0
+    count <- 0
+    
+    while (x.prev != 3){
+      x <- sample(c(1,2,3), size = 1, prob = P[x.prev,])
+      x.prev <- x
+      count <- count + 1
+    }
+    
+    rec[k, i] <- count
+  }
+}
+
+```
+
+
+```{r}
+mean(rec[1,])
+mean(rec[2,])
+```
+
+
+The mean value of arrival time from state 1 and state 2 are 4.67 and 3.86, 
+respectively.
+
+```{r}
+par(mfrow=c(1,2))
+hist(rec[1,], probability = T,
+     main = TeX(r"($x_0 = 1$)"),
+     xlab = "arrival time")
+abline(v=mean(rec[1,]), col="red", lwd=2)
+hist(rec[2,], probability = T, 
+     main = TeX(r"($x_0 = 2$)"),
+     xlab = "arrival time")
+abline(v=mean(rec[2,]), col="red", lwd=2)
+```
+
+## b
+
+$$
+\begin{aligned}
+& \left\{\begin{array}{l}
+\mu_1=1+0.2 \mu_1+0.7 \mu_2 \\
+\mu_2=1+0.2 \mu_1+0.5 \mu_2
+\end{array}\right. \\
+\Rightarrow & \left\{\begin{array} { l } 
+{ 0 . 8 \mu _ { 1 } - 0 . 7 \mu _ { 2 } = 1 } \\
+{ - 0 . 2 \mu _ { 1 } + 0 . 5 \mu _ { 2 } = 1 }
+\end{array} \Rightarrow \left\{\begin{array}{l}
+\mu_1=\frac{60}{13} \approx 4.62 \\
+\mu_2=\frac{50}{13} \approx 3.85
+\end{array}\right.\right.
+\end{aligned}
+$$
